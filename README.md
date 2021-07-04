@@ -2,9 +2,9 @@
 台指期原始資料轉換程式
 
 ## 介紹
-將台灣期交所每日公布之原始資料轉換成分鐘K的程式
-方便匯入Multichart,Tradestation
-或直接用Python pandas讀取csv
+將台灣期交所每日公布之原始資料轉換成分鐘K的程式 <br>
+方便匯入Multichart,Tradestation <br>
+或直接用Python pandas讀取csv <br>
 
 
 ## 說明
