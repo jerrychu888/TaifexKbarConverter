@@ -26,6 +26,8 @@ namespace KbarConverter
         {
             InitializeComponent();
             cbxFullTimeType.SelectedIndex = 0;
+            cbxDataType.SelectedIndex = 0;
+            cbxHeaderFormat.SelectedIndex = 0;
         }
 
         private void Init()
@@ -41,7 +43,7 @@ namespace KbarConverter
 
         private void WriteToCSV()
         {
-            using (StreamWriter sw = new StreamWriter(string.Format("{0}_{1}k.csv",_outputName, _convert_minutes)))
+            using (StreamWriter sw = new StreamWriter(string.Format("{0}_{1}k.csv", _outputName, _convert_minutes)))
             {
                 sw.WriteLine("Time,Open,High,Low,Close,Volume");
 
@@ -53,7 +55,7 @@ namespace KbarConverter
             }
         }
 
-        private void ReadDataFromTXTickData(string fname,string[] DayKey)
+        private void ReadDataFromTXTickData(string fname, string[] DayKey)
         {
             StreamReader reader = new StreamReader(fname, System.Text.Encoding.Default);
             string str;
@@ -104,11 +106,11 @@ namespace KbarConverter
                 //{
                 //    Console.Write(countLineNumber+":");
                 //    Console.WriteLine(str);
-                    
+
                 //}
 
 
-                if (_deliverMonthMode == "hot" && _deliverMonth=="")
+                if (_deliverMonthMode == "hot" && _deliverMonth == "")
                 {
                     _deliverMonth = strArray[2].Trim();
                 }
@@ -116,12 +118,12 @@ namespace KbarConverter
                 //    continue;
 
                 if (strArray[2].Trim() != _deliverMonth)
-                    break;                
+                    break;
 
                 TickData td = new TickData();
                 td.strDtTime = InsertDayKey + " " + strArray[3].Trim().Substring(0, 2) + ":" + strArray[3].Trim().Substring(2, 2) + ":" + strArray[3].Trim().Substring(4, 2);
                 td.fprice = float.Parse(strArray[4]);
-                td.iVolume = int.Parse(strArray[5])/2;
+                td.iVolume = int.Parse(strArray[5]) / 2;
                 td.DtTime = DateTime.Parse(td.strDtTime);
                 if (!_dicTickData.ContainsKey(InsertDayKey))
                     _dicTickData.Add(InsertDayKey, new List<TickData>());
@@ -170,7 +172,7 @@ namespace KbarConverter
                                 BrData.Low = tickData.fprice;
                                 BrData.Close = tickData.fprice;
                                 BrData.AddVolume(tickData.iVolume);
-                                
+
                             }
                             else // 把多出來的資料併入最後一根K
                             {
@@ -181,7 +183,7 @@ namespace KbarConverter
 
                                 BrData.Close = tickData.fprice;
                                 BrData.AddVolume(tickData.iVolume);
-                                
+
                             }
                         }
                     }
@@ -194,13 +196,13 @@ namespace KbarConverter
 
                         BrData.Close = tickData.fprice;
                         BrData.AddVolume(tickData.iVolume);
-                        
+
                     }
                 }
                 Console.WriteLine(_Bars.Count);
                 Console.WriteLine("Bar MinuteBar Add over");
             }
-            
+
         }
 
         private void btnStart_Click(object sender, EventArgs e)
@@ -215,11 +217,156 @@ namespace KbarConverter
                 _deliverMonth = tbxDeliveryDate.Text;
             }
 
-            _ExtractTypeFullTimeData = cbxFullTimeType.SelectedIndex+1;
+            _ExtractTypeFullTimeData = cbxFullTimeType.SelectedIndex + 1;
 
             _convert_minutes = int.Parse(tbxMin.Text);
             _outputName = tbxOutputName.Text;
-            Init();
+
+            if (cbxDataType.Text == "Tick")
+                Init();
+            else
+                TransferKbar();
+        }
+
+        void TransferKbar()
+        {
+            var rawData = OpenFileBrowser();
+            if (rawData != null)
+            {
+                int newTimeframe = int.Parse(tbxMin.Text);
+                _Bars = BarRecord.SwitchTimeframeFrom1MinBar(rawData, newTimeframe, false);
+                WriteToCSV();
+            }
+            else
+            {
+                MessageBox.Show("原始資料異常");
+            }
+
+        }
+
+        List<BarRecord> OpenFileBrowser()
+        {
+            FileInfo f;
+            StreamReader sr;
+            OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            //openFileDialog1.InitialDirectory = (Environment.CurrentDirectory+@"\Data\");
+            openFileDialog1.InitialDirectory = (Environment.CurrentDirectory);
+            openFileDialog1.Filter = "txt files (*.csv)|*.csv|" + "All files (*.*)|*.*";
+            //"說明   附檔名提示 真的系統filter的檔名" + ...
+            openFileDialog1.Title = "開啟歷史資料";
+            openFileDialog1.Multiselect = false; //是否可以選多個檔案
+            openFileDialog1.FilterIndex = 1; //以第幾個filer為預設
+            openFileDialog1.RestoreDirectory = true;
+            List<BarRecord> _lstBarRecord = new List<BarRecord>();
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                f = new FileInfo(openFileDialog1.FileName);
+                var _fileName = openFileDialog1.FileName;
+                _lstBarRecord.Clear();
+                sr = f.OpenText();
+                var header = sr.ReadLine();
+                string str; //讀一整行用
+                string[] str2; //分隔用
+                switch (header.Split(',').Length)
+                {
+                    case 6:
+                        cbxHeaderFormat.SelectedIndex = 1;
+                        break;
+                    case 7:
+                        cbxHeaderFormat.SelectedIndex = 2;
+                        break;
+                    default:
+                        return null;
+                }
+
+                if (cbxHeaderFormat.SelectedIndex == 1) //Time,Open,High,Low,Close,Volume
+                {
+                    while (sr.Peek() >= 0)
+                    {
+                        BarRecord Br_fromfile = new BarRecord();
+                        DateTime dt_fromfile = new DateTime();
+                        str = sr.ReadLine(); //讀出來是string
+                        str2 = str.Split(','); //經由分隔的符號 分別讀成string 構成一個string[]
+                        string strTimekey;
+
+                        //2012/04/02 10:43,7856,7857,7855,7856,51,10:43:00
+                        //Br_fromfile.BarDateTime=DateTime.Parse(str2[7]);
+
+                        Br_fromfile.Open = float.Parse(str2[1]);
+                        Br_fromfile.High = float.Parse(str2[2]);
+                        Br_fromfile.Low = float.Parse(str2[3]);
+                        Br_fromfile.Close = float.Parse(str2[4]);
+                        Br_fromfile.Volume = int.Parse(str2[5]);
+                        strTimekey = str2[0];
+
+                        dt_fromfile = DateTime.Parse(strTimekey);
+                        Br_fromfile.dt = dt_fromfile;
+                        _lstBarRecord.Add(Br_fromfile);
+                    }
+                    sr.Close();
+                    //Console.WriteLine("TEST READ TIME");
+                    //foreach (DateTime ddtt in _dicBarRecord.Keys)
+                    //{
+                    //    Console.WriteLine("{0}", ddtt);
+
+                    //}
+                    return _lstBarRecord;
+                }
+                else if(cbxHeaderFormat.SelectedIndex == 2) //Date,Time,Open,High,Low,Close,TotalVolume
+                {
+                    while (sr.Peek() >= 0)
+                    {
+                        BarRecord Br_fromfile = new BarRecord();
+                        DateTime dt_fromfile = new DateTime();
+                        str = sr.ReadLine(); //讀出來是string
+                        str2 = str.Split(','); //經由分隔的符號 分別讀成string 構成一個string[]
+                        string strTimekey;
+
+                        //2012/04/02 10:43,7856,7857,7855,7856,51,10:43:00
+                        //Br_fromfile.BarDateTime=DateTime.Parse(str2[7]);
+
+                        Br_fromfile.Open = float.Parse(str2[2]);
+                        Br_fromfile.High = float.Parse(str2[3]);
+                        Br_fromfile.Low = float.Parse(str2[4]);
+                        Br_fromfile.Close = float.Parse(str2[5]);
+                        Br_fromfile.Volume = int.Parse(str2[6]);
+                        strTimekey = str2[0] + " " + str2[1];
+
+                        dt_fromfile = DateTime.Parse(strTimekey);
+                        Br_fromfile.dt = dt_fromfile;
+                        _lstBarRecord.Add(Br_fromfile);
+                    }
+                    sr.Close();
+                    return _lstBarRecord;
+                }
+                else
+                {
+                    MessageBox.Show("請補一下Data Header");
+                    return null;
+                }
+                
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+
+        private void cbxDataType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if(cbxDataType.Text== "Tick")
+            {
+                cbxHeaderFormat.SelectedIndex = 0;
+                cbxHeaderFormat.Enabled = false;
+            }
+            else if(cbxDataType.Text == "1minK")
+            {
+                cbxHeaderFormat.SelectedIndex = 1;
+                cbxHeaderFormat.Enabled = true;
+                tbxMin.Text = "5";
+            }
         }
     }
 }
