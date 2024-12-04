@@ -22,12 +22,23 @@ namespace KbarConverter
         int _convert_minutes = 1;
         string _outputName = "output";
         int _ExtractTypeFullTimeData = 1; //是否抓取下午盤資料 , 每份檔案的開頭是前一天的午盤 15:00~~~隔天的13:45 , 1:早盤,2:午盤,3:全時盤
+
+        const int REGULAR_TIME = 1;
+        const int AFTER_REGULAR_TIME = 2;
+        const int FULL_TIME = 3;
+
+        string _dataTimeOutputColumnFormat = "OneColumn"; //OneColumn, TwoColumn
+        string _kbarOutputShift = "Shift"; //NoShift, Shift
+
+
         public Form1()
         {
             InitializeComponent();
-            cbxFullTimeType.SelectedIndex = 0;
+            cbxFullTimeType.SelectedIndex = 2;
             cbxDataType.SelectedIndex = 0;
             cbxHeaderFormat.SelectedIndex = 0;
+            cbxDataTimeOutputColumnFormat.SelectedIndex = 0;
+            cbxKbarOutputShift.SelectedIndex = 0;
         }
 
         private void Init()
@@ -36,7 +47,7 @@ namespace KbarConverter
             {
                 ReadDataFromTXTickData(fi.FullName, Path.GetFileNameWithoutExtension(fi.Name).Split('_').ToArray());
             }
-
+            Console.WriteLine("Finish read");
             ConvertKBarFromTick();
             WriteToCSV();
         }
@@ -45,11 +56,19 @@ namespace KbarConverter
         {
             using (StreamWriter sw = new StreamWriter(string.Format("{0}_{1}k.csv", _outputName, _convert_minutes)))
             {
-                sw.WriteLine("Time,Open,High,Low,Close,Volume");
+                if(_dataTimeOutputColumnFormat == "OneColumn")
+                    sw.WriteLine("Time,Open,High,Low,Close,Volume");
+                else if (_dataTimeOutputColumnFormat == "TwoColumn")
+                    sw.WriteLine("Date,Time,Open,High,Low,Close,Volume");
 
                 foreach (var item in _Bars)
                 {
-                    sw.WriteLine($"{item.dt.ToString("yyyy/MM/dd HH:mm:ss")},{item.Open},{item.High},{item.Low},{item.Close},{item.Volume}");
+                    if(_dataTimeOutputColumnFormat== "OneColumn")
+                        sw.WriteLine($"{item.dt.ToString("yyyy/MM/dd HH:mm:ss")},{item.Open},{item.High},{item.Low},{item.Close},{item.Volume}");
+                    else if (_dataTimeOutputColumnFormat == "TwoColumn")
+                        sw.WriteLine($"{item.dt.ToString("yyyy/MM/dd")},{item.dt.ToString("HH:mm:ss")},{item.Open},{item.High},{item.Low},{item.Close},{item.Volume}");
+                    
+                    //sw.WriteLine($"{item.dt.ToString("yyyy/MM/dd HH:mm:ss")},{item.Open},{item.High},{item.Low},{item.Close},{item.Volume}");
                 }
                 sw.Close();
             }
@@ -61,6 +80,7 @@ namespace KbarConverter
             string str;
             string[] strArray;
             string InsertDayKey = DayKey[1] + "/" + DayKey[2] + "/" + DayKey[3];
+            DateTime fileNameDate = new DateTime(int.Parse(DayKey[1]), int.Parse(DayKey[2]), int.Parse(DayKey[3]));
             int countLineNumber = 1;
             reader.ReadLine();
 
@@ -89,17 +109,27 @@ namespace KbarConverter
                 if (strArray[2].Trim().Count() > 7)
                     continue;
 
-                if (_ExtractTypeFullTimeData == 1) //只抓早盤
+                if (_ExtractTypeFullTimeData == REGULAR_TIME) //只抓早盤
                 {
-                    if (strArray[0] != DayKey[1] + DayKey[2] + DayKey[3])
+                    
+                    if (strArray[0] != DayKey[1] + DayKey[2] + DayKey[3]) //前一天下午15~23:59:59
                         continue;
 
-                    if (strArray[3].CompareTo("084500") < 0)
+                    if (strArray[3].CompareTo("084500") < 0) //當天00:00:00~05:00:00
                         continue;
                 }
+                else if(_ExtractTypeFullTimeData == AFTER_REGULAR_TIME)
+                {
+                    if (strArray[3].CompareTo("084500") >= 0 && strArray[3].CompareTo("134500") <= 0)
+                        continue;
+                }
+                else if(_ExtractTypeFullTimeData == FULL_TIME)
+                {
 
-                if (strArray[3].CompareTo("134459") >= 0)
-                    Console.WriteLine(str);
+                }
+
+                //if (strArray[3].CompareTo("134459") >= 0)
+                //    Console.WriteLine(str);
 
 
                 //if (strArray[3].CompareTo("123000") >= 0)
@@ -112,7 +142,8 @@ namespace KbarConverter
 
                 if (_deliverMonthMode == "hot" && _deliverMonth == "")
                 {
-                    _deliverMonth = strArray[2].Trim();
+                    //_deliverMonth = strArray[2].Trim();
+                    _deliverMonth = TimeUtil.CalculateDeliveryMonth(fileNameDate);
                 }
                 //if (strArray[2].Trim() != _deliverMonth)
                 //    continue;
@@ -121,25 +152,107 @@ namespace KbarConverter
                     break;
 
                 TickData td = new TickData();
-                td.strDtTime = InsertDayKey + " " + strArray[3].Trim().Substring(0, 2) + ":" + strArray[3].Trim().Substring(2, 2) + ":" + strArray[3].Trim().Substring(4, 2);
+                string tickDateKey = strArray[0].Substring(0,4) + "/" + strArray[0].Substring(4, 2) + "/" + strArray[0].Substring(6, 2);
+                td.strDtTime = tickDateKey + " " + strArray[3].Trim().Substring(0, 2) + ":" + strArray[3].Trim().Substring(2, 2) + ":" + strArray[3].Trim().Substring(4, 2);
                 td.fprice = float.Parse(strArray[4]);
                 td.iVolume = int.Parse(strArray[5]) / 2;
                 td.DtTime = DateTime.Parse(td.strDtTime);
-                if (!_dicTickData.ContainsKey(InsertDayKey))
-                    _dicTickData.Add(InsertDayKey, new List<TickData>());
+                if (!_dicTickData.ContainsKey(tickDateKey))
+                    _dicTickData.Add(tickDateKey, new List<TickData>());
 
-                _dicTickData[InsertDayKey].Add(td);
+                _dicTickData[tickDateKey].Add(td);
                 //list.Add(str);
                 //Console.WriteLine(str);
             }
         }
-
         private void ConvertKBarFromTick()
+        {
+            foreach (KeyValuePair<string, List<TickData>> item in _dicTickData) // 把所有資料轉成 KLine
+            {
+                DateTime tempDT = new DateTime(
+                    int.Parse(item.Key.Substring(0, 4)),
+                    int.Parse(item.Key.Substring(5, 2)),
+                    int.Parse(item.Key.Substring(8, 2)),
+                    8, 45, 0
+                );
+
+                int previousTimeDiff = -1;
+                BarRecord currentBar = null;
+
+                foreach (TickData tickData in item.Value)
+                {
+                    // 截斷時間至分鐘級
+                    tickData.DtTime = tickData.DtTime.Truncate(TimeSpan.FromMinutes(1));
+
+                    // 計算時間差
+                    int totalMinutesDiff = (int)((tickData.DtTime - tempDT).TotalMinutes);
+
+                    // 根據 isShift 決定時間對齊方式
+                    int alignedTimeDiff = -1;
+                    if (_kbarOutputShift == "NoShift")
+                    {
+                        // 0~4 分對齊到 0 分
+                        alignedTimeDiff = (totalMinutesDiff / _convert_minutes) * _convert_minutes;
+                    }
+                    else if(_kbarOutputShift == "Shift")
+                    {
+                        // 0~4 分 Shift 到 5 分
+                        alignedTimeDiff = ((totalMinutesDiff + _convert_minutes) / _convert_minutes) * _convert_minutes;
+                    }
+
+                    // 如果時間區間發生變化，建立新的 KBar
+                    if (alignedTimeDiff != previousTimeDiff)
+                    {
+                        if (_isFullTime || (tickData.DtTime.Hour >= 8 && tickData.DtTime.Hour <= 13))
+                        {
+                            // 處理例外時間段
+                            if (tickData.DtTime.Hour == 13 && tickData.DtTime.Minute == 46)
+                            {
+                                tickData.DtTime = tickData.DtTime.AddMinutes(-2);
+                            }
+                            else if (tickData.DtTime.Hour == 13 && tickData.DtTime.Minute == 45)
+                            {
+                                tickData.DtTime = tickData.DtTime.AddMinutes(-1);
+                            }
+
+                            // 創建新 KBar
+                            previousTimeDiff = alignedTimeDiff;
+                            currentBar = new BarRecord();
+                            _Bars.Add(currentBar);
+
+                            // 設定 KBar 基本資料
+                            currentBar.dt = tempDT.AddMinutes(alignedTimeDiff);
+                            currentBar.Open = tickData.fprice;
+                            currentBar.High = tickData.fprice;
+                            currentBar.Low = tickData.fprice;
+                            currentBar.Close = tickData.fprice;
+                            currentBar.AddVolume(tickData.iVolume);
+                        }
+                    }
+                    else
+                    {
+                        // 更新當前 KBar
+                        if (tickData.fprice > currentBar.High)
+                            currentBar.High = tickData.fprice;
+
+                        if (tickData.fprice < currentBar.Low)
+                            currentBar.Low = tickData.fprice;
+
+                        currentBar.Close = tickData.fprice;
+                        currentBar.AddVolume(tickData.iVolume);
+                    }
+                }
+
+                Console.WriteLine(_Bars.Count);
+                Console.WriteLine("Bar MinuteBar Add over");
+            }
+        }
+        private void ConvertKBarFromTick_old()
         {
             foreach (KeyValuePair<string, List<TickData>> item in _dicTickData) //把所有資料轉成KLine
             {
                 DateTime tempDT = new DateTime(int.Parse(item.Key.Substring(0, 4)), int.Parse(item.Key.Substring(5, 2)), int.Parse(item.Key.Substring(8, 2)), 8, 45, 00);
-                int TimeDiff = -1;
+                int TimeDiff = -1; //為了判斷是否要新增一根KBar
                 BarRecord BrData = null;
                 float prePrice = -1;
                 foreach (TickData tickData in item.Value)
@@ -147,11 +260,32 @@ namespace KbarConverter
                     tickData.DtTime = tickData.DtTime.Truncate(TimeSpan.FromMinutes(1));
 
                     TimeSpan TsDiffDay = new TimeSpan(tickData.DtTime.Ticks - tempDT.Ticks);
-                    if ((((int)(TsDiffDay.TotalMinutes)) - ((int)(TsDiffDay.TotalMinutes)) % _convert_minutes) != TimeDiff)
+
+                    // Explanation: The modulo operation (%) is performed before the subtraction (-) due to operator precedence.
+                    // This means that (int)(TsDiffDay.TotalMinutes) % _convert_minutes is calculated first, and then subtracted from (int)(TsDiffDay.TotalMinutes).
+                    if ( ( ( (int)(TsDiffDay.TotalMinutes) ) - ( (int)(TsDiffDay.TotalMinutes) ) % _convert_minutes) != TimeDiff) //EX: 46- ( 46-45 %5)
                     {
                         if (_isFullTime)
                         {
+                            if (tickData.DtTime.Hour == 13 && tickData.DtTime.Minute == 46)
+                            {
+                                tickData.DtTime = tickData.DtTime.AddMinutes(-2);
+                            }
+                            else if (tickData.DtTime.Hour == 13 && tickData.DtTime.Minute == 45)
+                            {
+                                tickData.DtTime = tickData.DtTime.AddMinutes(-1);
+                            }
 
+                            TimeDiff = (((int)(TsDiffDay.TotalMinutes)) - ((int)(TsDiffDay.TotalMinutes)) % _convert_minutes);
+                            BrData = new BarRecord();
+                            _Bars.Add(BrData);
+
+                            BrData.dt = tickData.DtTime.AddMinutes(_convert_minutes);
+                            BrData.Open = tickData.fprice;
+                            BrData.High = tickData.fprice;
+                            BrData.Low = tickData.fprice;
+                            BrData.Close = tickData.fprice;
+                            BrData.AddVolume(tickData.iVolume);
                         }
                         else
                         {
@@ -164,6 +298,8 @@ namespace KbarConverter
                                 BrData = new BarRecord();
                                 _Bars.Add(BrData);
 
+                                if(tickData.DtTime.Minute==46)
+                                    Console.WriteLine();
 
                                 BrData.dt = tickData.DtTime.AddMinutes(_convert_minutes);
                                 //BrData.dt = BrData.dt.AddSeconds(-BrData.dt.Second);
@@ -218,6 +354,13 @@ namespace KbarConverter
             }
 
             _ExtractTypeFullTimeData = cbxFullTimeType.SelectedIndex + 1;
+            if(_ExtractTypeFullTimeData == FULL_TIME || _ExtractTypeFullTimeData == AFTER_REGULAR_TIME)
+            {
+                _isFullTime = true;
+            }
+
+            _dataTimeOutputColumnFormat = cbxDataTimeOutputColumnFormat.Text;
+            _kbarOutputShift = cbxKbarOutputShift.Text;
 
             _convert_minutes = int.Parse(tbxMin.Text);
             _outputName = tbxOutputName.Text;
