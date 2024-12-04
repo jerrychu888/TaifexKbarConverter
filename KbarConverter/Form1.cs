@@ -28,7 +28,7 @@ namespace KbarConverter
         const int FULL_TIME = 3;
 
         string _dataTimeOutputColumnFormat = "OneColumn"; //OneColumn, TwoColumn
-        string _kbarOutputShift = "Shift"; //NoShift, Shift
+        string _kbarOutputBarTime = "CloseTime"; //CloseTime, OpenTime
 
 
         public Form1()
@@ -37,8 +37,8 @@ namespace KbarConverter
             cbxFullTimeType.SelectedIndex = 2;
             cbxDataType.SelectedIndex = 0;
             cbxHeaderFormat.SelectedIndex = 0;
-            cbxDataTimeOutputColumnFormat.SelectedIndex = 0;
-            cbxKbarOutputShift.SelectedIndex = 0;
+            cbxDataTimeOutputColumnFormat.SelectedIndex = 1;
+            cbxKbarOutputBarTime.SelectedIndex = 1;
         }
 
         private void Init()
@@ -164,9 +164,13 @@ namespace KbarConverter
                 //list.Add(str);
                 //Console.WriteLine(str);
             }
+            reader.Close();
+            reader.Dispose();
         }
         private void ConvertKBarFromTick()
         {
+            DateTime dt = DateTime.MinValue;
+
             foreach (KeyValuePair<string, List<TickData>> item in _dicTickData) // 把所有資料轉成 KLine
             {
                 DateTime tempDT = new DateTime(
@@ -176,7 +180,7 @@ namespace KbarConverter
                     8, 45, 0
                 );
 
-                int previousTimeDiff = -1;
+                DateTime previousCovertedTime = DateTime.MinValue;
                 BarRecord currentBar = null;
 
                 foreach (TickData tickData in item.Value)
@@ -184,24 +188,55 @@ namespace KbarConverter
                     // 截斷時間至分鐘級
                     tickData.DtTime = tickData.DtTime.Truncate(TimeSpan.FromMinutes(1));
 
+                    //TODO:這是轉分鐘K喔
+                    //tickData.DtTime = tickData.DtTime.AddMinutes(1); //先把tick統一轉成closeTime再來
+
+                    if (tickData.DtTime.Hour == 4 && tickData.DtTime.Minute==55)
+                        Console.WriteLine();
+                    if (tickData.DtTime.Hour == 4 && tickData.DtTime.Minute == 56)
+                        Console.WriteLine();
+                    
+                    //TODO: 處理夜盤交易時間跨日的問題
+                    if(tickData.DtTime.Hour < 8)
+                    {
+                        tempDT = new DateTime(
+                        int.Parse(item.Key.Substring(0, 4)),
+                        int.Parse(item.Key.Substring(5, 2)),
+                        int.Parse(item.Key.Substring(8, 2)),
+                        15, 0, 0
+                        ).AddDays(-1);
+                    }
+                    else if (tickData.DtTime.Hour > 13)
+                    {
+                        tempDT = new DateTime(
+                        int.Parse(item.Key.Substring(0, 4)),
+                        int.Parse(item.Key.Substring(5, 2)),
+                        int.Parse(item.Key.Substring(8, 2)),
+                        15, 0, 0
+                        );
+                    }
+
+
                     // 計算時間差
                     int totalMinutesDiff = (int)((tickData.DtTime - tempDT).TotalMinutes);
 
                     // 根據 isShift 決定時間對齊方式
                     int alignedTimeDiff = -1;
-                    if (_kbarOutputShift == "NoShift")
+                    if (_kbarOutputBarTime == "OpenTime")
                     {
                         // 0~4 分對齊到 0 分
-                        alignedTimeDiff = (totalMinutesDiff / _convert_minutes) * _convert_minutes;
+                        alignedTimeDiff = -(totalMinutesDiff % _convert_minutes);
                     }
-                    else if(_kbarOutputShift == "Shift")
+                    else if(_kbarOutputBarTime == "CloseTime")
                     {
                         // 0~4 分 Shift 到 5 分
-                        alignedTimeDiff = ((totalMinutesDiff + _convert_minutes) / _convert_minutes) * _convert_minutes;
+                        alignedTimeDiff = _convert_minutes - (totalMinutesDiff % _convert_minutes);
                     }
 
+                    var convertedTime = tickData.DtTime.AddMinutes(alignedTimeDiff);
+
                     // 如果時間區間發生變化，建立新的 KBar
-                    if (alignedTimeDiff != previousTimeDiff)
+                    if (convertedTime != previousCovertedTime)
                     {
                         if (_isFullTime || (tickData.DtTime.Hour >= 8 && tickData.DtTime.Hour <= 13))
                         {
@@ -216,12 +251,13 @@ namespace KbarConverter
                             }
 
                             // 創建新 KBar
-                            previousTimeDiff = alignedTimeDiff;
+                            previousCovertedTime = convertedTime;
                             currentBar = new BarRecord();
                             _Bars.Add(currentBar);
 
                             // 設定 KBar 基本資料
-                            currentBar.dt = tempDT.AddMinutes(alignedTimeDiff);
+                            //currentBar.dt = tempDT.AddMinutes(alignedTimeDiff);
+                            currentBar.dt = convertedTime;
                             currentBar.Open = tickData.fprice;
                             currentBar.High = tickData.fprice;
                             currentBar.Low = tickData.fprice;
@@ -246,6 +282,12 @@ namespace KbarConverter
                 Console.WriteLine(_Bars.Count);
                 Console.WriteLine("Bar MinuteBar Add over");
             }
+
+            // 移除重複的 KBar , 原始資料不知道在幹嘛, 會重複
+            _Bars = _Bars.GroupBy(bar => bar.dt)
+             .Select(group => group.First())
+             .OrderBy(bar => bar.dt)
+             .ToList();
         }
         private void ConvertKBarFromTick_old()
         {
@@ -360,7 +402,7 @@ namespace KbarConverter
             }
 
             _dataTimeOutputColumnFormat = cbxDataTimeOutputColumnFormat.Text;
-            _kbarOutputShift = cbxKbarOutputShift.Text;
+            _kbarOutputBarTime = cbxKbarOutputBarTime.Text;
 
             _convert_minutes = int.Parse(tbxMin.Text);
             _outputName = tbxOutputName.Text;

@@ -31,6 +31,10 @@
             this.tbxMin = new System.Windows.Forms.TextBox();
             this.btnStart = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label10 = new System.Windows.Forms.Label();
+            this.cbxKbarOutputBarTime = new System.Windows.Forms.ComboBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.cbxDataTimeOutputColumnFormat = new System.Windows.Forms.ComboBox();
             this.cbxHeaderFormat = new System.Windows.Forms.ComboBox();
             this.label9 = new System.Windows.Forms.Label();
             this.cbxDataType = new System.Windows.Forms.ComboBox();
@@ -44,17 +48,13 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
-            this.label6 = new System.Windows.Forms.Label();
-            this.cbxDataTimeOutputColumnFormat = new System.Windows.Forms.ComboBox();
-            this.label10 = new System.Windows.Forms.Label();
-            this.cbxKbarOutputShift = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tbxMin
             // 
             this.tbxMin.Location = new System.Drawing.Point(242, 118);
-            this.tbxMin.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.tbxMin.Margin = new System.Windows.Forms.Padding(5);
             this.tbxMin.Name = "tbxMin";
             this.tbxMin.Size = new System.Drawing.Size(139, 36);
             this.tbxMin.TabIndex = 0;
@@ -63,7 +63,7 @@
             // btnStart
             // 
             this.btnStart.Location = new System.Drawing.Point(546, 38);
-            this.btnStart.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.btnStart.Margin = new System.Windows.Forms.Padding(5);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(263, 200);
             this.btnStart.TabIndex = 1;
@@ -74,7 +74,7 @@
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.label10);
-            this.groupBox1.Controls.Add(this.cbxKbarOutputShift);
+            this.groupBox1.Controls.Add(this.cbxKbarOutputBarTime);
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Controls.Add(this.cbxDataTimeOutputColumnFormat);
             this.groupBox1.Controls.Add(this.cbxHeaderFormat);
@@ -91,13 +91,57 @@
             this.groupBox1.Controls.Add(this.tbxMin);
             this.groupBox1.Controls.Add(this.btnStart);
             this.groupBox1.Location = new System.Drawing.Point(34, 34);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(5);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(5);
             this.groupBox1.Size = new System.Drawing.Size(869, 667);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "設定";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(67, 593);
+            this.label10.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(97, 24);
+            this.label10.TabIndex = 16;
+            this.label10.Text = "Bar Time";
+            // 
+            // cbxKbarOutputBarTime
+            // 
+            this.cbxKbarOutputBarTime.FormattingEnabled = true;
+            this.cbxKbarOutputBarTime.Items.AddRange(new object[] {
+            "OpenTime",
+            "CloseTime"});
+            this.cbxKbarOutputBarTime.Location = new System.Drawing.Point(242, 593);
+            this.cbxKbarOutputBarTime.Margin = new System.Windows.Forms.Padding(5);
+            this.cbxKbarOutputBarTime.Name = "cbxKbarOutputBarTime";
+            this.cbxKbarOutputBarTime.Size = new System.Drawing.Size(139, 32);
+            this.cbxKbarOutputBarTime.TabIndex = 15;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(67, 523);
+            this.label6.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(106, 24);
+            this.label6.TabIndex = 14;
+            this.label6.Text = "日期時間";
+            // 
+            // cbxDataTimeOutputColumnFormat
+            // 
+            this.cbxDataTimeOutputColumnFormat.FormattingEnabled = true;
+            this.cbxDataTimeOutputColumnFormat.Items.AddRange(new object[] {
+            "OneColumn",
+            "TwoColumn"});
+            this.cbxDataTimeOutputColumnFormat.Location = new System.Drawing.Point(242, 523);
+            this.cbxDataTimeOutputColumnFormat.Margin = new System.Windows.Forms.Padding(5);
+            this.cbxDataTimeOutputColumnFormat.Name = "cbxDataTimeOutputColumnFormat";
+            this.cbxDataTimeOutputColumnFormat.Size = new System.Drawing.Size(139, 32);
+            this.cbxDataTimeOutputColumnFormat.TabIndex = 13;
             // 
             // cbxHeaderFormat
             // 
@@ -107,7 +151,7 @@
             "Time,Open,High,Low,Close,Volume",
             "Date,Time,Open,High,Low,Close,TotalVolume"});
             this.cbxHeaderFormat.Location = new System.Drawing.Point(242, 442);
-            this.cbxHeaderFormat.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.cbxHeaderFormat.Margin = new System.Windows.Forms.Padding(5);
             this.cbxHeaderFormat.Name = "cbxHeaderFormat";
             this.cbxHeaderFormat.Size = new System.Drawing.Size(565, 32);
             this.cbxHeaderFormat.TabIndex = 12;
@@ -129,7 +173,7 @@
             "Tick",
             "1minK"});
             this.cbxDataType.Location = new System.Drawing.Point(242, 34);
-            this.cbxDataType.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.cbxDataType.Margin = new System.Windows.Forms.Padding(5);
             this.cbxDataType.Name = "cbxDataType";
             this.cbxDataType.Size = new System.Drawing.Size(139, 32);
             this.cbxDataType.TabIndex = 10;
@@ -163,7 +207,7 @@
             "僅午盤",
             "全時(早+午)"});
             this.cbxFullTimeType.Location = new System.Drawing.Point(242, 362);
-            this.cbxFullTimeType.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.cbxFullTimeType.Margin = new System.Windows.Forms.Padding(5);
             this.cbxFullTimeType.Name = "cbxFullTimeType";
             this.cbxFullTimeType.Size = new System.Drawing.Size(139, 32);
             this.cbxFullTimeType.TabIndex = 7;
@@ -171,7 +215,7 @@
             // tbxOutputName
             // 
             this.tbxOutputName.Location = new System.Drawing.Point(242, 282);
-            this.tbxOutputName.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.tbxOutputName.Margin = new System.Windows.Forms.Padding(5);
             this.tbxOutputName.Name = "tbxOutputName";
             this.tbxOutputName.Size = new System.Drawing.Size(139, 36);
             this.tbxOutputName.TabIndex = 6;
@@ -190,7 +234,7 @@
             // tbxDeliveryDate
             // 
             this.tbxDeliveryDate.Location = new System.Drawing.Point(242, 192);
-            this.tbxDeliveryDate.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.tbxDeliveryDate.Margin = new System.Windows.Forms.Padding(5);
             this.tbxDeliveryDate.Name = "tbxDeliveryDate";
             this.tbxDeliveryDate.Size = new System.Drawing.Size(139, 36);
             this.tbxDeliveryDate.TabIndex = 4;
@@ -236,50 +280,6 @@
             this.label5.TabIndex = 8;
             this.label5.Text = "1.若結算月輸入yyyyMM則自動判定所有近月資料";
             // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(67, 523);
-            this.label6.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(106, 24);
-            this.label6.TabIndex = 14;
-            this.label6.Text = "日期時間";
-            // 
-            // cbxDataTimeOutputColumnFormat
-            // 
-            this.cbxDataTimeOutputColumnFormat.FormattingEnabled = true;
-            this.cbxDataTimeOutputColumnFormat.Items.AddRange(new object[] {
-            "OneColumn",
-            "TwoColumn"});
-            this.cbxDataTimeOutputColumnFormat.Location = new System.Drawing.Point(242, 523);
-            this.cbxDataTimeOutputColumnFormat.Margin = new System.Windows.Forms.Padding(5);
-            this.cbxDataTimeOutputColumnFormat.Name = "cbxDataTimeOutputColumnFormat";
-            this.cbxDataTimeOutputColumnFormat.Size = new System.Drawing.Size(139, 32);
-            this.cbxDataTimeOutputColumnFormat.TabIndex = 13;
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(67, 593);
-            this.label10.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(93, 24);
-            this.label10.TabIndex = 16;
-            this.label10.Text = "Shift Bar";
-            // 
-            // cbxKbarOutputShift
-            // 
-            this.cbxKbarOutputShift.FormattingEnabled = true;
-            this.cbxKbarOutputShift.Items.AddRange(new object[] {
-            "Shift",
-            "NoShift"});
-            this.cbxKbarOutputShift.Location = new System.Drawing.Point(242, 593);
-            this.cbxKbarOutputShift.Margin = new System.Windows.Forms.Padding(5);
-            this.cbxKbarOutputShift.Name = "cbxKbarOutputShift";
-            this.cbxKbarOutputShift.Size = new System.Drawing.Size(139, 32);
-            this.cbxKbarOutputShift.TabIndex = 15;
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(13F, 24F);
@@ -290,7 +290,7 @@
             this.Controls.Add(this.groupBox1);
             this.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
-            this.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.Margin = new System.Windows.Forms.Padding(5);
             this.Name = "Form1";
             this.Text = "台指期原始資料轉換程式";
             this.groupBox1.ResumeLayout(false);
@@ -319,7 +319,7 @@
         private System.Windows.Forms.ComboBox cbxHeaderFormat;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Label label10;
-        private System.Windows.Forms.ComboBox cbxKbarOutputShift;
+        private System.Windows.Forms.ComboBox cbxKbarOutputBarTime;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.ComboBox cbxDataTimeOutputColumnFormat;
     }
