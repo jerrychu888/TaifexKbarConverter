@@ -29,7 +29,7 @@ namespace KbarConverter
 
         string _dataTimeOutputColumnFormat = "OneColumn"; //OneColumn, TwoColumn
         string _kbarOutputBarTime = "CloseTime"; //CloseTime, OpenTime
-
+        string _QuerySymbolName = "TX";
 
         public Form1()
         {
@@ -103,7 +103,7 @@ namespace KbarConverter
                 if (strArray.Count() < 6)
                     continue;
 
-                if (strArray[1].Trim() != "TX")
+                if (strArray[1].Trim() != _QuerySymbolName)
                     continue;
 
                 if (strArray[2].Trim().Count() > 7)
